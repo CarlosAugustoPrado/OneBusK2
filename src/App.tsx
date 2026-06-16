@@ -1,13 +1,13 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SearchPage } from "./features/search/SearchPage";
+import { BookingPage } from "./features/booking/BookingPage";
 import styled from "styled-components";
 
-// Criamos a instância do React Query (gerenciador de cache do lado cliente)
 const queryClient = new QueryClient({
 	defaultOptions: {
 		queries: {
-			refetchOnWindowFocus: false, // Evita requisições desnecessárias ao trocar de aba
+			refetchOnWindowFocus: false,
 			retry: 1,
 		},
 	},
@@ -36,7 +36,7 @@ export default function App() {
 					</Header>
 					<Routes>
 						<Route path="/" element={<SearchPage />} />
-						{/* Adicionaremos as próximas rotas aqui depois */}
+						<Route path="/reserva" element={<BookingPage />} />
 						<Route path="/checkout" element={<div>Checkout (Em breve)</div>} />
 					</Routes>
 				</Layout>

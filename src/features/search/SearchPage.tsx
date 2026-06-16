@@ -6,6 +6,8 @@ import { Input } from "../../shared/components/Input";
 import { Card } from "../../shared/components/Card";
 import { type Viagem } from "../../core/types";
 import { Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useBookingStore } from "../../core/store";
 
 const fetchViagens = async (origem: string): Promise<Viagem[]> => {
 	const response = await fetch(`/api/viagens${origem ? `?origem=${origem}` : ""}`);
@@ -16,6 +18,9 @@ const fetchViagens = async (origem: string): Promise<Viagem[]> => {
 export const SearchPage = () => {
 	const [origemInput, setOrigemInput] = useState("");
 	const [buscaAtiva, setBuscaAtiva] = useState("");
+
+	const navigate = useNavigate();
+	const { setViagem } = useBookingStore();
 
 	const {
 		data: viagens,
@@ -70,7 +75,14 @@ export const SearchPage = () => {
 							<PriceSection>
 								<span className="price">R$ {viagem.precoBase.toFixed(2)}</span>
 								<span className="seats">{viagem.assentosDisponiveis} vagas restantes</span>
-								<Button variant="outline">Escolher Assento</Button>
+								<Button
+									variant="outline"
+									onClick={() => {
+										setViagem(viagem);
+										navigate("/reserva");
+									}}>
+									Escolher Assento
+								</Button>
 							</PriceSection>
 						</ViagemCard>
 					))}
