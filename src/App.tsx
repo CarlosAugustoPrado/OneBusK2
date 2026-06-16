@@ -1,7 +1,9 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SearchPage } from "./features/search/SearchPage";
 import { BookingPage } from "./features/booking/BookingPage";
+import { CheckoutPage } from "./features/checkout/CheckoutPage";
+import { ConsultPage } from "./features/consult/ConsultPage";
 import styled from "styled-components";
 
 const queryClient = new QueryClient({
@@ -21,8 +23,26 @@ const Layout = styled.main`
 
 const Header = styled.header`
 	margin-bottom: ${({ theme }) => theme.spacing.xl};
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+
 	h1 {
 		color: ${({ theme }) => theme.colors.primary};
+	}
+
+	nav {
+		display: flex;
+		gap: 16px;
+	}
+
+	a {
+		color: ${({ theme }) => theme.colors.text};
+		text-decoration: none;
+		font-weight: 500;
+		&:hover {
+			color: ${({ theme }) => theme.colors.primary};
+		}
 	}
 `;
 
@@ -33,11 +53,16 @@ export default function App() {
 				<Layout>
 					<Header>
 						<h1>🚌 OniBus Express</h1>
+						<nav>
+							<Link to="/">Comprar Passagem</Link>
+							<Link to="/consulta">Minhas Reservas</Link>
+						</nav>
 					</Header>
 					<Routes>
 						<Route path="/" element={<SearchPage />} />
 						<Route path="/reserva" element={<BookingPage />} />
-						<Route path="/checkout" element={<div>Checkout (Em breve)</div>} />
+						<Route path="/checkout" element={<CheckoutPage />} />
+						<Route path="/consulta" element={<ConsultPage />} />
 					</Routes>
 				</Layout>
 			</BrowserRouter>
