@@ -14,8 +14,14 @@ export const handlers = [
 		const origem = url.searchParams.get("origem");
 		const destino = url.searchParams.get("destino");
 		let resultados = viagens;
-		if (origem) resultados = resultados.filter((v) => v.origem === origem);
-		if (destino) resultados = resultados.filter((v) => v.destino === destino);
+
+		if (origem) {
+			resultados = resultados.filter((v) => v.origem.toLowerCase().includes(origem.toLowerCase()));
+		}
+
+		if (destino) {
+			resultados = resultados.filter((v) => v.destino.toLowerCase().includes(destino.toLowerCase()));
+		}
 
 		return HttpResponse.json(resultados);
 	}),

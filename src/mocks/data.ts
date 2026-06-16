@@ -14,6 +14,7 @@ export const viagens = [
 		precoBase: 120.5,
 		assentosDisponiveis: 40,
 		assentosOcupados: ["1A", "1B", "4C"],
+		duracaoEstimada: "6h",
 	},
 	{
 		id: "v2",
@@ -24,5 +25,6 @@ export const viagens = [
 		precoBase: 95.0,
 		assentosDisponiveis: 42,
 		assentosOcupados: ["2A"],
+		duracaoEstimada: "6h",
 	},
 ];
