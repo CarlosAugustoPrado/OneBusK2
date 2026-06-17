@@ -1,59 +1,87 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import styled from "styled-components";
 import { Card } from "../../shared/components/Card";
 import { Input } from "../../shared/components/Input";
 import { Button } from "../../shared/components/Button";
 import { Search, XCircle } from "lucide-react";
+import { useToast } from "../../shared/components/Toast";
+import { useConfirm } from "../../shared/components/ConfirmDialog";
+import { type Reserva, type CancelarReservaResponse } from "../../core/types";
 
-const buscarReserva = async (codigo: string) => {
-	const response = await fetch(`/api/reservas/${codigo.toUpperCase()}`);
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
+
+const buscarReserva = async (codigo: string): Promise<Reserva> => {
+	const response = await fetch(`${API_BASE}/api/reservas/${codigo.toUpperCase()}`);
 	if (!response.ok) throw new Error("Reserva não encontrada. Verifique o código.");
 	return response.json();
 };
 
-const cancelarReserva = async (codigo: string) => {
-	const response = await fetch(`/api/reservas/${codigo}`, { method: "DELETE" });
+const cancelarReserva = async (codigo: string): Promise<CancelarReservaResponse> => {
+	const response = await fetch(`${API_BASE}/api/reservas/${codigo.toUpperCase()}`, {
+		method: "DELETE",
+	});
 	if (!response.ok) throw new Error("Erro ao cancelar reserva.");
 	return response.json();
 };
 
 export const ConsultPage = () => {
 	const [codigoInput, setCodigoInput] = useState("");
+	const [codigoBusca, setCodigoBusca] = useState<string | null>(null);
 
-	const fetchMutation = useMutation({
-		mutationFn: buscarReserva,
-		onError: (error: Error) => alert(error.message),
+	const { showToast } = useToast();
+	const { confirm } = useConfirm();
+	const queryClient = useQueryClient();
+
+	// useQuery com enabled: false — busca apenas quando codigoBusca é definido
+	const {
+		data: reserva,
+		isLoading: isFetching,
+		isError,
+		error,
+	} = useQuery<Reserva, Error>({
+		queryKey: ["reserva", codigoBusca],
+		queryFn: () => buscarReserva(codigoBusca!),
+		enabled: !!codigoBusca,
+		retry: false,
 	});
 
 	const cancelMutation = useMutation({
 		mutationFn: cancelarReserva,
 		onSuccess: () => {
-			alert("Reserva cancelada com sucesso!");
-
-			fetchMutation.mutate(codigoInput);
+			showToast("Reserva cancelada com sucesso!", "success");
+			// Invalida o cache da reserva para refazer o GET automaticamente
+			queryClient.invalidateQueries({ queryKey: ["reserva", codigoBusca] });
 		},
-		onError: (error: Error) => alert(error.message),
+		onError: (err: Error) => {
+			showToast(err.message, "error");
+		},
 	});
 
 	const handleSearch = (e: React.FormEvent) => {
 		e.preventDefault();
-		if (codigoInput.trim()) fetchMutation.mutate(codigoInput);
-	};
-
-	const handleCancel = () => {
-		if (confirm("Tem certeza que deseja cancelar esta reserva?")) {
-			cancelMutation.mutate(codigoInput);
+		if (codigoInput.trim()) {
+			setCodigoBusca(codigoInput.trim());
 		}
 	};
 
-	const reserva = fetchMutation.data;
+	const handleCancel = async () => {
+		const confirmed = await confirm({
+			title: "Cancelar Passagem",
+			message: "Tem certeza que deseja cancelar esta reserva? O assento será liberado para outras pessoas.",
+			confirmLabel: "Sim, cancelar",
+			cancelLabel: "Voltar",
+		});
+		if (confirmed && codigoBusca) {
+			cancelMutation.mutate(codigoBusca);
+		}
+	};
 
 	return (
 		<Container>
 			<Card style={{ width: "100%", maxWidth: "500px", margin: "0 auto" }}>
 				<h2 style={{ marginBottom: "16px" }}>Consultar Reserva</h2>
-				<p style={{ marginBottom: "24px", color: "#6c757d" }}>
+				<p style={{ marginBottom: "24px", color: "inherit" }}>
 					Digite o código gerado no momento da compra (ex: ONB-1234).
 				</p>
 
@@ -66,10 +94,14 @@ export const ConsultPage = () => {
 							onChange={(e) => setCodigoInput(e.target.value)}
 						/>
 					</div>
-					<Button type="submit" isLoading={fetchMutation.isPending}>
+					<Button type="submit" isLoading={isFetching}>
 						<Search size={20} /> Buscar
 					</Button>
 				</form>
+
+				{isError && (
+					<ErrorMessage role="alert">{error?.message ?? "Reserva não encontrada."}</ErrorMessage>
+				)}
 			</Card>
 
 			{reserva && (
@@ -90,6 +122,10 @@ export const ConsultPage = () => {
 							<strong>Destino:</strong> {reserva.viagemDetalhes.destino}
 						</p>
 						<p>
+							<strong>Data:</strong>{" "}
+							{new Date(reserva.viagemDetalhes.dataPartida).toLocaleString("pt-BR")}
+						</p>
+						<p>
 							<strong>Poltrona:</strong> {reserva.assento}
 						</p>
 					</div>
@@ -100,7 +136,8 @@ export const ConsultPage = () => {
 								variant="outline"
 								onClick={handleCancel}
 								isLoading={cancelMutation.isPending}
-								style={{ borderColor: "#dc3545", color: "#dc3545" }}>
+								style={{ borderColor: "currentcolor" }}
+								aria-label="Cancelar esta passagem">
 								<XCircle size={20} /> Cancelar Passagem
 							</Button>
 						</div>
@@ -117,11 +154,18 @@ const Container = styled.div`
 	gap: ${({ theme }) => theme.spacing.xl};
 `;
 
+const ErrorMessage = styled.p`
+	margin-top: ${({ theme }) => theme.spacing.md};
+	color: ${({ theme }) => theme.colors.error};
+	font-size: 14px;
+`;
+
 const DetailsCard = styled(Card)<{ $status: string }>`
 	max-width: 500px;
 	margin: 0 auto;
 	width: 100%;
-	border-top: 4px solid ${({ $status }) => ($status === "CONFIRMADA" ? "#28a745" : "#dc3545")};
+	border-top: 4px solid
+		${({ $status, theme }) => ($status === "CONFIRMADA" ? theme.colors.success : theme.colors.error)};
 
 	.header {
 		display: flex;
@@ -138,10 +182,10 @@ const DetailsCard = styled(Card)<{ $status: string }>`
 		color: white;
 
 		&.confirmada {
-			background-color: #28a745;
+			background-color: ${({ theme }) => theme.colors.success};
 		}
 		&.cancelada {
-			background-color: #dc3545;
+			background-color: ${({ theme }) => theme.colors.error};
 		}
 	}
 
@@ -156,5 +200,6 @@ const DetailsCard = styled(Card)<{ $status: string }>`
 		border-top: 1px solid ${({ theme }) => theme.colors.border};
 		display: flex;
 		justify-content: flex-end;
+		color: ${({ theme }) => theme.colors.error};
 	}
 `;

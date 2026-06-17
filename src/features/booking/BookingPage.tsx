@@ -69,7 +69,10 @@ export const BookingPage = () => {
 			<MapaSection>
 				<Card>
 					<h2 style={{ textAlign: "center", marginBottom: "16px" }}>Escolha seu Assento</h2>
-					<SeatMap assentosOcupados={viagemSelecionada.assentosOcupados || []} totalAssentos={40} />
+					<SeatMap
+						assentosOcupados={viagemSelecionada.assentosOcupados ?? []}
+						totalAssentos={viagemSelecionada.totalAssentos}
+					/>
 				</Card>
 			</MapaSection>
 		</Container>

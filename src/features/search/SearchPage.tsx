@@ -9,15 +9,24 @@ import { Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useBookingStore } from "../../core/store";
 
-const fetchViagens = async (origem: string): Promise<Viagem[]> => {
-	const response = await fetch(`/api/viagens${origem ? `?origem=${origem}` : ""}`);
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
+
+const fetchViagens = async (origem: string, destino: string, data: string): Promise<Viagem[]> => {
+	const params = new URLSearchParams();
+	if (origem) params.set("origem", origem);
+	if (destino) params.set("destino", destino);
+	if (data) params.set("data", data);
+
+	const response = await fetch(`${API_BASE}/api/viagens?${params.toString()}`);
 	if (!response.ok) throw new Error("Erro ao buscar viagens");
 	return response.json();
 };
 
 export const SearchPage = () => {
 	const [origemInput, setOrigemInput] = useState("");
-	const [buscaAtiva, setBuscaAtiva] = useState("");
+	const [destinoInput, setDestinoInput] = useState("");
+	const [dataInput, setDataInput] = useState("");
+	const [filtros, setFiltros] = useState<{ origem: string; destino: string; data: string } | null>(null);
 
 	const navigate = useNavigate();
 	const { setViagem } = useBookingStore();
@@ -27,13 +36,14 @@ export const SearchPage = () => {
 		isLoading,
 		isError,
 	} = useQuery({
-		queryKey: ["viagens", buscaAtiva],
-		queryFn: () => fetchViagens(buscaAtiva),
+		queryKey: ["viagens", filtros],
+		queryFn: () => fetchViagens(filtros!.origem, filtros!.destino, filtros!.data),
+		enabled: filtros !== null,
 	});
 
 	const handleSearch = (e: React.FormEvent) => {
 		e.preventDefault();
-		setBuscaAtiva(origemInput);
+		setFiltros({ origem: origemInput, destino: destinoInput, data: dataInput });
 	};
 
 	return (
@@ -47,8 +57,18 @@ export const SearchPage = () => {
 						value={origemInput}
 						onChange={(e) => setOrigemInput(e.target.value)}
 					/>
-					<Input label="Destino (Opcional no MVP)" placeholder="Ex: Rio de Janeiro" />
-					<Input label="Data (Opcional no MVP)" type="date" />
+					<Input
+						label="Destino"
+						placeholder="Ex: Rio de Janeiro"
+						value={destinoInput}
+						onChange={(e) => setDestinoInput(e.target.value)}
+					/>
+					<Input
+						label="Data de Ida"
+						type="date"
+						value={dataInput}
+						onChange={(e) => setDataInput(e.target.value)}
+					/>
 					<Button type="submit" style={{ alignSelf: "flex-end" }}>
 						<Search size={20} />
 						Buscar Passagens

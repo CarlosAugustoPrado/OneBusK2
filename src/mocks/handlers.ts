@@ -1,11 +1,6 @@
 import { http, HttpResponse, delay } from "msw";
 import { rotas, viagens } from "./data";
-
-interface Passageiro {
-	nome: string;
-	email: string;
-	cpf: string;
-}
+import { type Passageiro } from "../core/types";
 
 interface ReservaMock {
 	codigoReserva: string;
@@ -30,14 +25,21 @@ export const handlers = [
 		const url = new URL(request.url);
 		const origem = url.searchParams.get("origem");
 		const destino = url.searchParams.get("destino");
+		const data = url.searchParams.get("data"); // formato: YYYY-MM-DD
 		let resultados = viagens;
 
 		if (origem) {
-			resultados = resultados.filter((v) => v.origem.toLowerCase().includes(origem.toLowerCase()));
+			resultados = resultados.filter((v) =>
+				v.origem.toLowerCase().includes(origem.toLowerCase()),
+			);
 		}
-
 		if (destino) {
-			resultados = resultados.filter((v) => v.destino.toLowerCase().includes(destino.toLowerCase()));
+			resultados = resultados.filter((v) =>
+				v.destino.toLowerCase().includes(destino.toLowerCase()),
+			);
+		}
+		if (data) {
+			resultados = resultados.filter((v) => v.dataPartida.startsWith(data));
 		}
 
 		return HttpResponse.json(resultados);

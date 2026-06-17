@@ -11,6 +11,10 @@ import { validarCPF } from "../../shared/utils/cpf";
 import { Card } from "../../shared/components/Card";
 import { Input } from "../../shared/components/Input";
 import { Button } from "../../shared/components/Button";
+import { useToast } from "../../shared/components/Toast";
+import { type CriarReservaResponse } from "../../core/types";
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
 const checkoutSchema = z.object({
 	nome: z.string().min(3, "O nome deve ter pelo menos 3 caracteres"),
@@ -26,8 +30,8 @@ interface CriarReservaPayload {
 	passageiro: CheckoutFormData;
 }
 
-const criarReserva = async (payload: CriarReservaPayload) => {
-	const response = await fetch("/api/reservas", {
+const criarReserva = async (payload: CriarReservaPayload): Promise<CriarReservaResponse> => {
+	const response = await fetch(`${API_BASE}/api/reservas`, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify(payload),
@@ -42,6 +46,7 @@ const criarReserva = async (payload: CriarReservaPayload) => {
 
 export const CheckoutPage = () => {
 	const navigate = useNavigate();
+	const { showToast } = useToast();
 	const { viagemSelecionada, assentoSelecionado, limparReserva } = useBookingStore();
 
 	const [ticketGerado, setTicketGerado] = useState<string | null>(null);
@@ -61,7 +66,7 @@ export const CheckoutPage = () => {
 			limparReserva();
 		},
 		onError: (error: Error) => {
-			alert(`Falha na reserva: ${error.message}`);
+			showToast(`Falha na reserva: ${error.message}`, "error");
 		},
 	});
 
@@ -150,7 +155,7 @@ export const CheckoutPage = () => {
 						<p>
 							<strong>Poltrona:</strong> {assentoSelecionado}
 						</p>
-						<hr style={{ margin: "16px 0", borderColor: "#dee2e6" }} />
+						<hr style={{ margin: "16px 0", borderColor: "currentcolor", opacity: 0.2 }} />
 						<h3>Total: R$ {viagemSelecionada.precoBase.toFixed(2)}</h3>
 					</ResumeDetails>
 				</Card>
@@ -203,7 +208,7 @@ const SuccessCard = styled(Card)`
 	gap: ${({ theme }) => theme.spacing.lg};
 
 	h2 {
-		color: #28a745;
+		color: ${({ theme }) => theme.colors.success};
 	}
 
 	.ticket {

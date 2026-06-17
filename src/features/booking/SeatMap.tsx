@@ -3,60 +3,90 @@ import { useBookingStore } from "../../core/store";
 
 interface SeatMapProps {
 	assentosOcupados: string[];
-	totalAssentos: number; // Ex: 40
+	totalAssentos: number;
 }
+
+interface SeatRowData {
+	row: number;
+	left: string[];
+	right: string[];
+}
+
+const buildRows = (totalAssentos: number): SeatRowData[] => {
+	const numRows = Math.ceil(totalAssentos / 4);
+	return Array.from({ length: numRows }, (_, i) => {
+		const row = i + 1;
+		return {
+			row,
+			left: [`${row}A`, `${row}B`],
+			right: [`${row}C`, `${row}D`],
+		};
+	});
+};
 
 export const SeatMap = ({ assentosOcupados, totalAssentos }: SeatMapProps) => {
 	const { assentoSelecionado, setAssento } = useBookingStore();
-
-	const gerarAssentos = () => {
-		const fileiras = totalAssentos / 4;
-		const assentos: string[] = [];
-		const letras = ["A", "B", "C", "D"];
-
-		for (let i = 1; i <= fileiras; i++) {
-			letras.forEach((letra) => {
-				assentos.push(`${i}${letra}`);
-			});
-		}
-		return assentos;
-	};
-
-	const todosAssentos = gerarAssentos();
+	const rows = buildRows(totalAssentos);
 
 	return (
 		<BusContainer>
 			<DriverArea>Frente do Ônibus</DriverArea>
 
 			<Grid>
-				{todosAssentos.map((id) => {
-					const ocupado = assentosOcupados.includes(id);
-					const selecionado = assentoSelecionado === id;
+				{rows.map(({ row, left, right }) => (
+					<Row key={row}>
+						<SeatGroup>
+							{left.map((id) => {
+								const ocupado = assentosOcupados.includes(id);
+								const selecionado = assentoSelecionado === id;
+								return (
+									<SeatButton
+										key={id}
+										$ocupado={ocupado}
+										$selecionado={selecionado}
+										disabled={ocupado}
+										onClick={() => setAssento(id)}
+										aria-label={`Assento ${id}${ocupado ? " — ocupado" : ""}`}
+										title={`Assento ${id}`}>
+										{id}
+									</SeatButton>
+								);
+							})}
+						</SeatGroup>
 
-					return (
-						<SeatButton
-							key={id}
-							$ocupado={ocupado}
-							$selecionado={selecionado}
-							disabled={ocupado}
-							onClick={() => setAssento(id)}
-							aria-label={`Assento ${id}`}
-							title={`Assento ${id}`}>
-							{id}
-						</SeatButton>
-					);
-				})}
+						<Corridor aria-hidden="true" />
+
+						<SeatGroup>
+							{right.map((id) => {
+								const ocupado = assentosOcupados.includes(id);
+								const selecionado = assentoSelecionado === id;
+								return (
+									<SeatButton
+										key={id}
+										$ocupado={ocupado}
+										$selecionado={selecionado}
+										disabled={ocupado}
+										onClick={() => setAssento(id)}
+										aria-label={`Assento ${id}${ocupado ? " — ocupado" : ""}`}
+										title={`Assento ${id}`}>
+										{id}
+									</SeatButton>
+								);
+							})}
+						</SeatGroup>
+					</Row>
+				))}
 			</Grid>
 
 			<Legend>
 				<LegendItem>
-					<SeatButton as="div" /> Livre
+					<SeatButton as="div" aria-hidden="true" /> Livre
 				</LegendItem>
 				<LegendItem>
-					<SeatButton as="div" $selecionado /> Selecionado
+					<SeatButton as="div" $selecionado aria-hidden="true" /> Selecionado
 				</LegendItem>
 				<LegendItem>
-					<SeatButton as="div" $ocupado /> Ocupado
+					<SeatButton as="div" $ocupado aria-hidden="true" /> Ocupado
 				</LegendItem>
 			</Legend>
 		</BusContainer>
@@ -74,6 +104,7 @@ const BusContainer = styled.div`
 	max-width: 350px;
 	margin: 0 auto;
 `;
+
 const DriverArea = styled.div`
 	width: 100%;
 	text-align: center;
@@ -83,15 +114,31 @@ const DriverArea = styled.div`
 	color: ${({ theme }) => theme.colors.textLight};
 	font-weight: 500;
 `;
-const Grid = styled.div`
-	display: grid;
-	grid-template-columns: 1fr 1fr 24px 1fr 1fr;
-	gap: ${({ theme }) => theme.spacing.sm};
 
-	& > *:nth-child(4n + 3) {
-		grid-column: 4;
-	}
+const Grid = styled.div`
+	display: flex;
+	flex-direction: column;
+	gap: ${({ theme }) => theme.spacing.sm};
+	width: 100%;
 `;
+
+const Row = styled.div`
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 4px;
+`;
+
+const SeatGroup = styled.div`
+	display: flex;
+	gap: ${({ theme }) => theme.spacing.sm};
+`;
+
+const Corridor = styled.div`
+	width: 24px;
+	flex-shrink: 0;
+`;
+
 const SeatButton = styled.button<{ $ocupado?: boolean; $selecionado?: boolean }>`
 	width: 44px;
 	height: 44px;
@@ -129,12 +176,14 @@ const SeatButton = styled.button<{ $ocupado?: boolean; $selecionado?: boolean }>
 			$selecionado ? theme.colors.primary : `${theme.colors.primary}1A`};
 	}
 `;
+
 const Legend = styled.div`
 	display: flex;
 	gap: ${({ theme }) => theme.spacing.md};
 	margin-top: ${({ theme }) => theme.spacing.xl};
 	font-size: 14px;
 `;
+
 const LegendItem = styled.div`
 	display: flex;
 	align-items: center;

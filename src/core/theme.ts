@@ -7,6 +7,7 @@ export const theme = {
 		text: "#212529",
 		textLight: "#6c757d",
 		error: "#dc3545",
+		success: "#28a745",
 		border: "#dee2e6",
 	},
 	radii: {

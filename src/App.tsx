@@ -5,6 +5,9 @@ import { BookingPage } from "./features/booking/BookingPage";
 import { CheckoutPage } from "./features/checkout/CheckoutPage";
 import { ConsultPage } from "./features/consult/ConsultPage";
 import styled from "styled-components";
+import { ErrorBoundary } from "./core/ErrorBoundary";
+import { ToastProvider } from "./shared/components/Toast";
+import { ConfirmProvider } from "./shared/components/ConfirmDialog";
 
 const queryClient = new QueryClient({
 	defaultOptions: {
@@ -48,24 +51,30 @@ const Header = styled.header`
 
 export default function App() {
 	return (
-		<QueryClientProvider client={queryClient}>
-			<BrowserRouter>
-				<Layout>
-					<Header>
-						<h1>🚌 OniBus Express</h1>
-						<nav>
-							<Link to="/">Comprar Passagem</Link>
-							<Link to="/consulta">Minhas Reservas</Link>
-						</nav>
-					</Header>
-					<Routes>
-						<Route path="/" element={<SearchPage />} />
-						<Route path="/reserva" element={<BookingPage />} />
-						<Route path="/checkout" element={<CheckoutPage />} />
-						<Route path="/consulta" element={<ConsultPage />} />
-					</Routes>
-				</Layout>
-			</BrowserRouter>
-		</QueryClientProvider>
+		<ErrorBoundary>
+			<QueryClientProvider client={queryClient}>
+				<ToastProvider>
+					<ConfirmProvider>
+						<BrowserRouter>
+							<Layout>
+								<Header>
+									<h1>🚌 OniBus Express</h1>
+									<nav>
+										<Link to="/">Comprar Passagem</Link>
+										<Link to="/consulta">Minhas Reservas</Link>
+									</nav>
+								</Header>
+								<Routes>
+									<Route path="/" element={<SearchPage />} />
+									<Route path="/reserva" element={<BookingPage />} />
+									<Route path="/checkout" element={<CheckoutPage />} />
+									<Route path="/consulta" element={<ConsultPage />} />
+								</Routes>
+							</Layout>
+						</BrowserRouter>
+					</ConfirmProvider>
+				</ToastProvider>
+			</QueryClientProvider>
+		</ErrorBoundary>
 	);
 }
